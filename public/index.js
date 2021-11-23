@@ -148,6 +148,7 @@ const pinFileToIPFS = (fileBlob, cb) => {
             exampleKey: 'exampleValue'
         }
     });
+    
     data.append('pinataMetadata', metadata);
 
     //pinataOptions are optional
@@ -179,6 +180,7 @@ const pinFileToIPFS = (fileBlob, cb) => {
             }
         })
         .then(function (response) {
+            console.log('🚀 ~ response', response);
             if (response && response.data && response.data.IpfsHash) {            
               cb(response.data.IpfsHash)
             }
