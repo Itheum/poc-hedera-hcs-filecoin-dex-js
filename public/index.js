@@ -1,34 +1,52 @@
-// //imports needed for this function
-// const axios = require('axios');
-// const FormData = require('form-data');
+let pinataApiKey = '';
+let pinataSecretApiKey = '';
+let fileBlob = null;
+let isFileHash = false;
 
-const pinataApiKey = '';
-const pinataSecretApiKey = '';
-
-let socket;
+$.get("/config.json", function( data ) {
+  pinataApiKey = data.pinataApiKey;
+  pinataSecretApiKey = data.pinataSecretApiKey;
+});
 
 $(function() {
   // expose our socket client
-  socket = io();
+  let socket = io();
 
   // handle and submit new chat messages to our server
   $("form").submit(function(e) {
     e.preventDefault(); // prevents page reloading
+
     const msg = $("#m").val();
-    socket.emit("chat message", $("#m").val());
+
+    if (fileBlob) {
+      pinFileToIPFS(fileBlob, (IpfsHash) => {
+        isFileHash = true;
+
+        socket.emit("chat message", IpfsHash);
+        
+        $("#file").val("");
+        $('#fileBlob').text('');
+        fileBlob = null;
+      });
+    }
+    else if (msg) {
+      console.log('🚀 ~ $ ~ msg', msg);
+      socket.emit("chat message", msg);
+    }
+
     $("#m").val("");
+
     return false;
   });
 
   // listen for new chat messages from our server
   // these are all sent over the Hedera consensus service!
   socket.on("chat message", function(msg) {
-
     const jsonMsg = JSON.parse(msg);
     // Grab the specifically formatted message string
     const operatorId = jsonMsg.operatorAccount;
     const clientId = jsonMsg.client;
-    const theMessage = jsonMsg.message;
+    let theMessage = jsonMsg.message;
     const sequenceNumber = jsonMsg.sequence;
     const trimmedHash = "runningHash: " + jsonMsg.runningHash.slice(0,6) + "..";
     const trimmedTimestamp = jsonMsg.timestamp.slice(0,25);
@@ -37,13 +55,20 @@ $(function() {
     const topicId = document.getElementById("topic-id");
     const idString = topicId.innerHTML.substring(7, topicId.length);
 
+    if (isFileHash) {
+      let ipfsHash = theMessage;
+      theMessage = 'File is on IPFS at <br />';
+      theMessage += `<a href="https://gateway.pinata.cloud/ipfs/${ipfsHash}" target="_blank">https://gateway.pinata.cloud/ipfs/${ipfsHash}</a>`;
+      isFileHash = false;
+    }
+
     // Append the message to our HTML in pieces
     $("#messages").append(
       $("<li>").addClass("new-message").append(
         $("<div>").addClass("message").append(
           $("<p>").text(operatorId+"@"+clientId).addClass("client")).append(
             $("<div>").addClass("message-body").append(
-              $("<div>").text(theMessage).addClass("message-content")).append(
+              $("<div>").html(theMessage).addClass("message-content")).append(
               $("<div>").text(trimmedTimestamp).addClass("message-timestamp")))).append(
         $("<div>").addClass("meta").append(
           $("<p>").text("sequence: "+ sequenceNumber).addClass("details")).append(
@@ -79,8 +104,6 @@ $(function() {
   const fileSelector = document.getElementById('file');
 
   fileSelector.addEventListener('change', (event) => {
-    console.log(event.target.files);
-
     const file = event.target.files[0];
 
     if (file) {
@@ -93,25 +116,22 @@ $(function() {
       reader.onload = (e) => {
         const resStr = reader.result;
         console.log(resStr);
-        console.log(typeof resStr);
 
         if (resStr) {
           $('#fileBlob').text(resStr);
         }
       }
       
-      // https://developer.mozilla.org/en-US/docs/Web/API/FileReader
       // reader.readAsText(file);
       reader.readAsDataURL(file);
 
-      pinFileToIPFS(file);
-
+      fileBlob = file;
     }
   });
 });
 
 
-const pinFileToIPFS = (fileBlob) => {
+const pinFileToIPFS = (fileBlob, cb) => {
     const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
 
     // https://stackoverflow.com/questions/38917975/using-js-filereader-with-formdata
@@ -146,6 +166,7 @@ const pinFileToIPFS = (fileBlob) => {
             ]
         }
     });
+
     data.append('pinataOptions', pinataOptions);
 
     return axios
@@ -158,15 +179,12 @@ const pinFileToIPFS = (fileBlob) => {
             }
         })
         .then(function (response) {
-            console.log('🚀 ~ response', response);
-            //handle response here
-            debugger;
-            if (response && response.data && response.data.IpfsHash) {
-              socket.emit("ipfs file hash", response.data.IpfsHash);
-              $("#m").val("");
+            if (response && response.data && response.data.IpfsHash) {            
+              cb(response.data.IpfsHash)
             }
         })
         .catch(function (error) {
+            alert('🚀 ~ pinFileToIPFS ~ error');
             console.log('🚀 ~ pinFileToIPFS ~ error', error);
             //handle error here
         });
