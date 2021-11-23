@@ -1,6 +1,15 @@
+// //imports needed for this function
+// const axios = require('axios');
+// const FormData = require('form-data');
+
+const pinataApiKey = '';
+const pinataSecretApiKey = '';
+
+let socket;
+
 $(function() {
   // expose our socket client
-  const socket = io();
+  socket = io();
 
   // handle and submit new chat messages to our server
   $("form").submit(function(e) {
@@ -70,6 +79,8 @@ $(function() {
   const fileSelector = document.getElementById('file');
 
   fileSelector.addEventListener('change', (event) => {
+    console.log(event.target.files);
+
     const file = event.target.files[0];
 
     if (file) {
@@ -80,7 +91,7 @@ $(function() {
       reader.onabort = () => console.log('file reading was aborted')
       reader.onerror = () => console.log('file reading has failed')
       reader.onload = (e) => {
-        const resStr = reader.result
+        const resStr = reader.result;
         console.log(resStr);
         console.log(typeof resStr);
 
@@ -92,6 +103,71 @@ $(function() {
       // https://developer.mozilla.org/en-US/docs/Web/API/FileReader
       // reader.readAsText(file);
       reader.readAsDataURL(file);
+
+      pinFileToIPFS(file);
+
     }
   });
 });
+
+
+const pinFileToIPFS = (fileBlob) => {
+    const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
+
+    // https://stackoverflow.com/questions/38917975/using-js-filereader-with-formdata
+
+    //we gather a local file for this example, but any valid readStream source will work here.
+    let data = new FormData();
+    data.append('file', fileBlob);
+
+    //You'll need to make sure that the metadata is in the form of a JSON object that's been convered to a string
+    //metadata is optional
+    const metadata = JSON.stringify({
+        name: 'testname',
+        keyvalues: {
+            exampleKey: 'exampleValue'
+        }
+    });
+    data.append('pinataMetadata', metadata);
+
+    //pinataOptions are optional
+    const pinataOptions = JSON.stringify({
+        cidVersion: 0,
+        customPinPolicy: {
+            regions: [
+                {
+                    id: 'FRA1',
+                    desiredReplicationCount: 1
+                },
+                {
+                    id: 'NYC1',
+                    desiredReplicationCount: 2
+                }
+            ]
+        }
+    });
+    data.append('pinataOptions', pinataOptions);
+
+    return axios
+        .post(url, data, {
+            maxBodyLength: 'Infinity', //this is needed to prevent axios from erroring out with large files
+            headers: {
+                'Content-Type': `multipart/form-data; boundary=${data._boundary}`,
+                pinata_api_key: pinataApiKey,
+                pinata_secret_api_key: pinataSecretApiKey
+            }
+        })
+        .then(function (response) {
+            console.log('🚀 ~ response', response);
+            //handle response here
+            debugger;
+            if (response && response.data && response.data.IpfsHash) {
+              socket.emit("ipfs file hash", response.data.IpfsHash);
+              $("#m").val("");
+            }
+        })
+        .catch(function (error) {
+            console.log('🚀 ~ pinFileToIPFS ~ error', error);
+            //handle error here
+        });
+};
