@@ -56,6 +56,14 @@ If everything was configured properly, the chat should now open at a random port
 
 You can additionally run another instance of the chat application by creating a new terminal, and running the application again. This will find another unused, random port location, and deploy multiple instances to your local machine. With the environment configurability, you can test out multi-client chats.
 
+You need pinata.cloud as well for the IPFS to work. So signup for a free account and get the api key and secret. Then create a file in `public/config.json` with your values. This file is not checked into GIT
+```
+{
+  "pinataApiKey": "",
+  "pinataSecretApiKey": "",
+}
+```
+
 ### Notes
 - Tested on node 12
 - Tested on hedera tesnet and works across multiple instances running (tested with 2 chat clients)
