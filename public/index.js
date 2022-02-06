@@ -1,11 +1,15 @@
 let pinataApiKey = '';
 let pinataSecretApiKey = '';
+let web3StorageApiKey = '';
 let fileBlob = null;
 let isFileHash = false;
+let isWeb3StorageHash = false;
+
 
 $.get("/config.json", function( data ) {
   pinataApiKey = data.pinataApiKey;
   pinataSecretApiKey = data.pinataSecretApiKey;
+  web3StorageApiKey = data.web3StorageApiKey;
 });
 
 $(function() {
@@ -19,15 +23,33 @@ $(function() {
     const msg = $("#m").val();
 
     if (fileBlob) {
+      
       pinFileToIPFS(fileBlob, (IpfsHash) => {
         isFileHash = true;
 
-        socket.emit("chat message", IpfsHash);
+        let ipfsMsg = 'File is on IPFS at <br />';
+        ipfsMsg += `<a href="https://gateway.pinata.cloud/ipfs/${IpfsHash}" target="_blank">https://gateway.pinata.cloud/ipfs/${IpfsHash}</a><br/><br/>`;
+  
+  
+        socket.emit("chat message", ipfsMsg);
+        
+        $("#file").val("");
+        $('#fileBlob').text('');
+      });
+
+      uploadFileToWeb3Storage(fileBlob, (web3StorageHash) => {
+        isWeb3StorageHash = true;
+
+        let web3StorageMsg = 'File is on Web3.Storage (persisted @ Filecoin) at <br/>';
+        web3StorageMsg += `<a href="https://${web3StorageHash}.ipfs.dweb.link" target="_blank">https://${web3StorageHash}.ipfs.dweb.link</a><br/>`;
+
+        socket.emit("chat message", web3StorageMsg);
         
         $("#file").val("");
         $('#fileBlob').text('');
         fileBlob = null;
       });
+
     }
     else if (msg) {
       console.log('🚀 ~ $ ~ msg', msg);
@@ -54,13 +76,6 @@ $(function() {
     // Grab & trim our topic ID
     const topicId = document.getElementById("topic-id");
     const idString = topicId.innerHTML.substring(7, topicId.length);
-
-    if (isFileHash) {
-      let ipfsHash = theMessage;
-      theMessage = 'File is on IPFS at <br />';
-      theMessage += `<a href="https://gateway.pinata.cloud/ipfs/${ipfsHash}" target="_blank">https://gateway.pinata.cloud/ipfs/${ipfsHash}</a>`;
-      isFileHash = false;
-    }
 
     // Append the message to our HTML in pieces
     $("#messages").append(
@@ -130,7 +145,6 @@ $(function() {
   });
 });
 
-
 const pinFileToIPFS = (fileBlob, cb) => {
     const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
 
@@ -190,4 +204,33 @@ const pinFileToIPFS = (fileBlob, cb) => {
             console.log('🚀 ~ pinFileToIPFS ~ error', error);
             //handle error here
         });
+};
+
+
+const uploadFileToWeb3Storage = (fileBlob, cb) => {
+  const url = `https://api.web3.storage/upload`;
+
+  //we gather a local file for this example, but any valid readStream source will work here.
+  let data = new FormData();
+  data.append('file', fileBlob);
+
+  return axios
+      .post(url, data, {
+          maxBodyLength: 'Infinity', //this is needed to prevent axios from erroring out with large files
+          headers: {
+              'Content-Type': `multipart/form-data; boundary=${data._boundary}`,
+              'Authorization': `Bearer ${web3StorageApiKey}`,
+          }
+      })
+      .then(function (response) {
+          console.log('🚀 ~ response', response);
+          if (response && response.data && response.data.cid) {            
+            cb(response.data.cid)
+          }
+      })
+      .catch(function (error) {
+          alert('🚀 ~ web3Storage ~ error');
+          console.log('🚀 ~ web3Storage ~ error', error);
+          //handle error here
+      });
 };
