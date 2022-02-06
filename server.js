@@ -8,24 +8,11 @@ const fileUpload = require('express-fileupload');
 app.use(fileUpload());
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
-const File  = require ('web3.storage').File;
-const Web3Storage = require('web3.storage').Web3Storage;
 
 /* include other packages */
 const inquirer = require("inquirer");
 const open = require("open");
 const TextDecoder = require("text-encoding").TextDecoder;
-
-// Upload the file to Web3 Storage and Filecoin
-app.post('/', async (req,res)=> {
-    if (req.files) {
-        const files =[new File(req.files.file.data, req.files.file.name)];
-        const client = new Web3Storage({ token: process.env.WEB3_STORAGE_KEY});
-        const cid = await client.put(files);
-        console.log('stored files with cid:', cid);
-        res.status(200).send('File attached with CID: ' + cid);
-    }
-})
 
 /* hedera.js */
 const {
@@ -70,6 +57,7 @@ async function init() {
 }
 
 function runChat() {
+
     app.use(express.static("public"));
     http.listen(0, function () {
         const randomInstancePort = http.address().port;
