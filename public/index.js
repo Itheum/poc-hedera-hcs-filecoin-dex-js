@@ -2,9 +2,6 @@ let pinataApiKey = '';
 let pinataSecretApiKey = '';
 let web3StorageApiKey = '';
 let fileBlob = null;
-let isFileHash = false;
-let isWeb3StorageHash = false;
-
 
 $.get("/config.json", function( data ) {
   pinataApiKey = data.pinataApiKey;
@@ -25,8 +22,6 @@ $(function() {
     if (fileBlob) {
       
       pinFileToIPFS(fileBlob, (IpfsHash) => {
-        isFileHash = true;
-
         let ipfsMsg = 'File is on IPFS at <br />';
         ipfsMsg += `<a href="https://gateway.pinata.cloud/ipfs/${IpfsHash}" target="_blank">https://gateway.pinata.cloud/ipfs/${IpfsHash}</a><br/><br/>`;
   
@@ -38,8 +33,6 @@ $(function() {
       });
 
       uploadFileToWeb3Storage(fileBlob, (web3StorageHash) => {
-        isWeb3StorageHash = true;
-
         let web3StorageMsg = 'File is on Web3.Storage (persisted @ Filecoin) at <br/>';
         web3StorageMsg += `<a href="https://${web3StorageHash}.ipfs.dweb.link" target="_blank">https://${web3StorageHash}.ipfs.dweb.link</a><br/>`;
 
