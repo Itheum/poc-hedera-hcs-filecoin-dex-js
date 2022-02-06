@@ -73,7 +73,7 @@ Filecoin storage is via Web3.Storage that provides management of deals for persi
 ```
 
 ### Notes
-- Tested on node 12
+- Tested on node 16
 - Tested on hedera tesnet and works across multiple instances running (tested with 2 chat clients)
 - Make sure to rename the .env.sample to .env so you get a "publicKey" error when running
 - Didnt work with the defaul TOPIC_ID, so created a new one and it worked
