@@ -4,8 +4,6 @@ require("dotenv").config();
 /* include express.js & socket.io */
 const express = require("express");
 const app = express();
-const fileUpload = require('express-fileupload');
-app.use(fileUpload());
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const File  = require ('web3.storage').File;
