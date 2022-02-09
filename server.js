@@ -44,6 +44,7 @@ async function init() {
             } else {
                 await configureNewTopic();
             }
+
             /* run & serve the express app */
             runChat();
         } catch (error) {
@@ -54,6 +55,7 @@ async function init() {
 }
 
 function runChat() {
+
     app.use(express.static("public"));
     http.listen(0, function () {
         const randomInstancePort = http.address().port;

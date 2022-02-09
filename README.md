@@ -61,16 +61,19 @@ If everything was configured properly, the chat should now open at a random port
 
 You can additionally run another instance of the chat application by creating a new terminal, and running the application again. This will find another unused, random port location, and deploy multiple instances to your local machine. With the environment configurability, you can test out multi-client chats.
 
-You need pinata.cloud as well for the IPFS to work. So signup for a free account and get the api key and secret. Then create a file in `public/config.json` with your values. This file is not checked into GIT
+You need pinata.cloud as well for the IPFS to work. So signup for a free account and get the api key and secret. Then create a file in `public/config.json` with your values. This file is not checked into GIT.
+
+Filecoin storage is via Web3.Storage that provides management of deals for persistent storage. Register for an account @ https://web3.storage/login/ and add the apikey to config.json as below.
 ```
 {
   "pinataApiKey": "",
   "pinataSecretApiKey": "",
+  "web3StorageApiKey": ""
 }
 ```
 
 ### Notes
-- Tested on node 12
+- Tested on node 16
 - Tested on hedera tesnet and works across multiple instances running (tested with 2 chat clients)
 - Make sure to rename the .env.sample to .env so you get a "publicKey" error when running
 - Didnt work with the defaul TOPIC_ID, so created a new one and it worked
